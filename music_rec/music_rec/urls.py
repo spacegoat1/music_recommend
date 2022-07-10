@@ -15,10 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+# importing views from views..py
+from mr.views import recommender_view
+
 
 # from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('', views.index, name='index'),
+    path('', recommender_view),
 ]
