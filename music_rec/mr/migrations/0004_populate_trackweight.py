@@ -7,7 +7,7 @@ def forwards_func(apps, schema_editor):
     Track = apps.get_model("mr", "Track")
 
     tracks = Track.objects.all()
-    weight = 100.0/len(tracks)
+    weight = 10000.0
     for t in tracks:
         TrackWeight.objects.create(track=t, weight=weight)
 
