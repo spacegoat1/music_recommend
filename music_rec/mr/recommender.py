@@ -7,17 +7,22 @@ from numpy.random import choice
 import pickle
 from pathlib import Path
 import os
-from django.db.models import Sum
+from django.db.models import Sum, F
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TMP_DIR = os.path.join(os.path.join(BASE_DIR,'music_rec'),'tmp')
 
 def load_recommender(user):
-    file_name = str(TMP_DIR) + "/" + str(user.id) + ".pkl"
-    with open(file_name, 'rb') as pickle_file:
-        r = pickle.load(pickle_file)
-    return r
+    try:
+        # Load recommender from history (saved to disk)
+        file_name = str(TMP_DIR) + "/" + str(user.id) + ".pkl"
+        with open(file_name, 'rb') as pickle_file:
+            r = pickle.load(pickle_file)
+        return r
+    except:
+        # The user does not have an existing recommender object
+        return Recommender(user)
 
 # Calculation of parameters for models
 RECOMMENDER_PARAMETERS = {
@@ -29,6 +34,7 @@ RECOMMENDER_PARAMETERS = {
     'alpha_album': 0.08, # how much to update the album weight by, like a learning rate
     'alpha_artist': 0.06, # how much to update the artist weight by, like a learning rate
     'alpha_genre': 0.04, # how much to update the genre weight by, like a learning rate
+    'decay_factor': 0.99,
 }
 
 MIN_POSSIBLE_WEIGHT = \
@@ -43,7 +49,7 @@ ACTION_CONSEQUENCES = {
             'like': 'up',
             'dislike': 'down',
             'skip': 'down',
-            'listened_through': 'up',
+            'listen_through': 'up',
             'ignored': None,
         }
 
@@ -59,7 +65,15 @@ class Recommender:
         # tracks = Track.objects.all()
         self.last_played = deque(RECOMMENDER_PARAMETERS["deque_length"]*[None], 
                                 RECOMMENDER_PARAMETERS["deque_length"])
-        self.track_count = RECOMMENDER_PARAMETERS['track_count']
+        self.track_count = RECOMMENDER_PARAMETERS['track_count'] # No of tracks in DB
+
+        # discount controls how much the new evidence updates existing weights. 
+        # The idea is, when we have little information, we should update the weights more
+        # However, once we have already plenty of data, the evidence should update weights less
+        # If we keep decaying the importance of new evidence, eventually weights will stop updating
+        # Therefore, discount should be in the range (0.5, 1)
+        self.discount = 1.0 
+
         self.user = user if user else User.objects.get(id=1) # assuming a single user!
         # user = user if user else User.objects.get(id=1) # assuming a single user!
 
@@ -79,14 +93,16 @@ class Recommender:
         self.current_distribution = TrackWeight.objects.filter(user=self.user).values_list("track", "weight")
 
     def get_new_weight(self, curr_total, num_tracks, alpha, direction):
+        if num_tracks == 0:
+            return 1, 0
         if direction == 'up':
             gap_above = (MAX_POSSIBLE_WEIGHT * num_tracks) - curr_total
-            shift = gap_above * alpha
+            shift = gap_above * alpha * self.discount
             new_total = curr_total + shift
             move_factor = new_total / curr_total
         else:
             gap_below = curr_total - (MIN_POSSIBLE_WEIGHT * num_tracks)
-            shift = gap_below * alpha
+            shift = gap_below * alpha * self.discount
             new_total = curr_total - shift
             move_factor = new_total / curr_total
         return move_factor, shift
@@ -100,9 +116,11 @@ class Recommender:
                             1, 
                             p=curr_track_weights[1,:]/np.sum(curr_track_weights[1,:]))[0])
         self.last_played.append(chosen_track)
+        self.discount = max(0.5, self.decay_factor*RECOMMENDER_PARAMETERS['decay_factor'])
+
         return chosen_track
 
-    def update_weights(self, track_id, action):
+    def update_weights(self, action):
         # Update the weights for a user given a track and action
         # action can be one of ["like", "dislike", "skip", "listened_through", "ignored"]
 
@@ -116,13 +134,21 @@ class Recommender:
         # 2. album
         # 3. artist
         # 4. genre
-        # track_id = 100
-        track = Track.objects.get(id=track_id)
+        track = Track.objects.get(id=self.last_played[-1])
+        if track is None:
+            # This should never happen
+            return None
         track_weight = TrackWeight.objects.filter(track=track)
-        album_weights = TrackWeight.objects.filter(track__album=track.album).difference(track_weight)
+        track_weight_ids = track_weight.values_list("id")
+        album_weights = TrackWeight.objects.filter(track__album=track.album).exclude(id__in=track_weight_ids)
+        album_weights_ids = album_weights.values_list("id")
         artist_weights = TrackWeight.objects.filter(track__album__artist=track.album.artist)\
-            .difference(album_weights).difference(track_weight)
-        genre_weights = TrackWeight.objects.filter(track__genre=track.genre).difference(track_weight)
+            .exclude(id__in=album_weights_ids).exclude(id__in=track_weight_ids)
+        artist_weights_ids = artist_weights.values_list("id")
+        genre_weights = TrackWeight.objects.filter(track__genre=track.genre)\
+            .exclude(id__in=track_weight_ids)\
+            .exclude(id__in=album_weights_ids)\
+            .exclude(id__in=artist_weights_ids)
         
         track_shift_factor, track_shift = self.get_new_weight(curr_total=track_weight.aggregate(Sum('weight'))['weight__sum'], 
                                                 num_tracks=1,
@@ -147,12 +173,14 @@ class Recommender:
         # The weights of all other tracks need to be moved in the opposite direction
         total_shift = track_shift + album_shift + artist_shift + genre_shift
         remaining_tracks = TrackWeight.objects.all()\
-                                    .difference(track_weight)\
-                                    .difference(album_weights)\
-                                    .difference(artist_weights)\
-                                    .difference(genre_weights)
+                                            .exclude(id__in=track_weight_ids)\
+                                            .exclude(id__in=album_weights_ids)\
+                                            .exclude(id__in=artist_weights_ids)\
+                                            .exclude(id__in=genre_weights.values_list("id"))
         remaining_tracks_total_weight = remaining_tracks.aggregate(Sum('weight'))['weight__sum']
         remaining_tracks_shift_factor = (remaining_tracks_total_weight - total_shift) / remaining_tracks_total_weight
+        print("total_shift", total_shift)
+        print("remaining_tracks_shift_factor", remaining_tracks_shift_factor)
 
         # Update all the weights in the DB
         track_weight.update(weight=F('weight') * track_shift_factor)

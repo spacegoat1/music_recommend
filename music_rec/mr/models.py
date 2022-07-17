@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 
 """
 Simplifying assumptions:
-1. Each album is recorded by a unique artist
-2. Each track belongs to a unique album
-3. Each track belongs to a unique genre
+1. Each album is recorded by a single artist
+2. Each track belongs to a single album
+3. Each track belongs to a single genre
 """
 
 class Artist(models.Model):

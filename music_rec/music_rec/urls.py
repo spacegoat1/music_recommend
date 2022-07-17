@@ -24,16 +24,15 @@ from mr import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('', views.index, name='index'),
-    # path('', recommender_view),
     # ex: /polls/
-    path('', views.index, name='index'),
+    # path('', views.index, name='index'),
     # ex: /polls/5/
-    path('<int:user_id>/', views.detail, name='detail'),
+    # path('<int:user_id>/', views.detail, name='detail'),
     # ex: /polls/5/results/
-    path('<int:user_id>/results/', views.results, name='results'),
+    # path('<int:user_id>/results/', views.results, name='results'),
     # ex: /polls/5/vote/
-    path('<int:track_id>/like/', views.like, name='like'),
-    path('<int:track_id>/dislike/', views.dislike, name='dislike'),
-    path('<int:track_id>/skip/', views.skip, name='skip'),
+    # path('<int:track_id>/like/', views.like, name='like'),
+    # path('<int:track_id>/dislike/', views.dislike, name='dislike'),
+    # path('<int:track_id>/skip/', views.skip, name='skip'),
+    path('', views.track_action, name='track-action'),
 ]
