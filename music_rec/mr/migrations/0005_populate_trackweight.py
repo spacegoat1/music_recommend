@@ -15,7 +15,7 @@ def forwards_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mr', '0003_trackweight_listenhistory'),
+        ('mr', '0004_INSERT_DATA'),
     ]
 
     operations = [

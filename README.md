@@ -35,9 +35,14 @@ To login user: https://python.plainenglish.io/inbuild-user-authentication-with-d
 To do:
 1. Login user
 2. Handle overlaps (same track belongs to track, album, artist, genre) - done
-3. Make updates decay depending on no. of tracks listened to
-4. SET TYPE DEFINTIONS FOR EACH FUNCTION, eg. track: Track
-5. Add documentation for code
+3. Make updates decay depending on no. of tracks listened to - done
+4. SET TYPE DEFINTIONS FOR EACH FUNCTION, eg. track: Track - not doing
+5. Add documentation for code - not doing
+6. Add some high level analytics for user (most favorite...) and the current distribution of weights
+7. Add a migration in the middle to populate the data in DB - done
+8. Setup on cloud
+9. Save listen history to DB - done
+10. Keep separate queue to update track weights - done
 
 
 ## ASSUMPTIONS:

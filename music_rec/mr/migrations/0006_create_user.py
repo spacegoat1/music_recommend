@@ -8,7 +8,7 @@ def forwards_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mr', '0004_populate_trackweight'),
+        ('mr', '0005_populate_trackweight'),
     ]
 
     operations = [
