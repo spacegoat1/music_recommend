@@ -26,23 +26,23 @@ def load_recommender(user):
 
 # Calculation of parameters for models
 RECOMMENDER_PARAMETERS = {
-    'max_ratio': 10,
-    'points_per_song_default': 1000,
+    'max_ratio': 50,
+    'points_per_song_default': 10000,
     'deque_length': 5,
     'track_count': Track.objects.all().count(),
-    'alpha_track': 0.1, # how much to update the track weight by, like a learning rate
-    'alpha_album': 0.08, # how much to update the album weight by, like a learning rate
-    'alpha_artist': 0.06, # how much to update the artist weight by, like a learning rate
-    'alpha_genre': 0.04, # how much to update the genre weight by, like a learning rate
+    'alpha_track': 0.2, # how much to update the track weight by, like a learning rate
+    'alpha_album': 0.16, # how much to update the album weight by, like a learning rate
+    'alpha_artist': 0.12, # how much to update the artist weight by, like a learning rate
+    'alpha_genre': 0.08 , # how much to update the genre weight by, like a learning rate
     'decay_factor': 0.99,
 }
 
 MIN_POSSIBLE_WEIGHT = \
-    (2 * RECOMMENDER_PARAMETERS['track_count'] * RECOMMENDER_PARAMETERS["points_per_song_default"]) / \
+    (2 * RECOMMENDER_PARAMETERS["points_per_song_default"]) / \
         (1 + RECOMMENDER_PARAMETERS["max_ratio"])
 
 MAX_POSSIBLE_WEIGHT = \
-    (2 * RECOMMENDER_PARAMETERS['track_count'] * RECOMMENDER_PARAMETERS["points_per_song_default"]) / \
+    (2 * RECOMMENDER_PARAMETERS["points_per_song_default"]) * \
         (RECOMMENDER_PARAMETERS["max_ratio"] / (1 + RECOMMENDER_PARAMETERS["max_ratio"]))
 
 ACTION_CONSEQUENCES = {
@@ -116,13 +116,15 @@ class Recommender:
                             1, 
                             p=curr_track_weights[1,:]/np.sum(curr_track_weights[1,:]))[0])
         self.last_played.append(chosen_track)
-        self.discount = max(0.5, self.decay_factor*RECOMMENDER_PARAMETERS['decay_factor'])
+        self.discount = max(0.5, self.discount*RECOMMENDER_PARAMETERS['decay_factor'])
 
         return chosen_track
 
     def update_weights(self, action):
         # Update the weights for a user given a track and action
         # action can be one of ["like", "dislike", "skip", "listened_through", "ignored"]
+        print("Updating weights")
+        print(MIN_POSSIBLE_WEIGHT, MAX_POSSIBLE_WEIGHT)
 
         up_or_down = ACTION_CONSEQUENCES[action]
         if up_or_down is None:
@@ -190,6 +192,7 @@ class Recommender:
         remaining_tracks.update(weight=F('weight') * remaining_tracks_shift_factor)
 
         # We assume that there are no rounding errors since weights are floats, not ints
+        print("Weights updated")
         return None
 
     def save(self):

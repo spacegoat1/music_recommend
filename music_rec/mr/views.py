@@ -3,7 +3,7 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect
 from mr.models import *
 from mr.recommender import *
 from .forms import TrackForm
-
+from mr.async_queue import *
 
 # Create your views here.
 
@@ -61,10 +61,9 @@ def track_action(request):
         'disable': disable_like_dislike,
     }
 
-    if action is not None:
-        user_recommender.update_weights(action)
-        # Update listen history
     user_recommender.save()
+    if action is not None:
+        async_processes(user_recommender, action)
 
     return render(request, 'track.html', {'form': form, 'track': track_details})
 
