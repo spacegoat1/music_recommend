@@ -1,5 +1,5 @@
 from django.db import migrations
-from music_rec.mr.models importArtist,  
+from music_rec.mr.models import *
 import pandas as pd
 import numpy as np
 import ast
