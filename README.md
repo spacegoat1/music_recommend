@@ -31,6 +31,8 @@ How to get the recommender variable to persist between request? -> Use Sessions 
 Will have to host on GCP
 
 To login user: https://python.plainenglish.io/inbuild-user-authentication-with-django-38b5983a7543
+python manage.py runserver 0.0.0.0:8000
+Available at the non-http address
 
 To do:
 1. Login user
@@ -72,5 +74,13 @@ Similarly, we can adjust the weight for each track of the album upward by (assum
 
 and so on for artist and genre. <br>
 When adjusting weights, we must be careful to maintain the same aggregate no of points across all tracks in the DB, so the weights of all tracks that do not fall into {track, album, artist, genre} must be reduced proportionally by the no of points that are added to this set. 
+
 3. A deque is maintained of the last 5 songs to avoid playing any of those. The number 5 is a hyperparameter which can be tuned. 
+
 4. # NEED TO BE CAREFUL -> LIKING A SONG IS NOT EQUIVALENT TO MOVING TO THE NEXT TRACK
+
+5. Note that the number of songs is not uniformly distributed across genres (distribution of song counts has been shared by email), and since we start with the assumption that each song is equally likely, this translates to the most frequent genre being overplayed in the beginning. 
+
+6. Weights are updated asynchronously. The code for async updates in DB was taken off StackOverflow: https://stackoverflow.com/questions/6614194/how-to-have-django-give-a-http-response-before-continuing-on-to-complete-a-task
+
+7. I included a simple bar chart using this guide: https://www.section.io/engineering-education/integrating-chart-js-in-django/ Ideally, I would have liked to show a probability distribution across all tracks, but there are too many to show meaningfully, so I left it at probability by genre. 
