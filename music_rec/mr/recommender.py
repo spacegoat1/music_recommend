@@ -26,7 +26,7 @@ def load_recommender(user):
 
 # Calculation of parameters for models
 RECOMMENDER_PARAMETERS = {
-    'max_ratio': 50,
+    'max_ratio': 500,
     'points_per_song_default': 10000,
     'deque_length': 5,
     'track_count': Track.objects.all().count(),
@@ -116,7 +116,7 @@ class Recommender:
                             1, 
                             p=curr_track_weights[1,:]/np.sum(curr_track_weights[1,:]))[0])
         self.last_played.append(chosen_track)
-        self.discount = max(0.5, self.discount*RECOMMENDER_PARAMETERS['decay_factor'])
+        self.discount = max(1, self.discount*RECOMMENDER_PARAMETERS['decay_factor'])
 
         return chosen_track
 

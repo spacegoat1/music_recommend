@@ -1,73 +1,104 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>Homepage</title>
-</head>
-<body>
-	<h1>Welcome to Geeksforgeeks.</h1>
-	
+{% extends 'base.html'%}
 
 
-<p> Currently Playing: {{ data }}</p>
+{%block scripts%}
+	<script>
+  
+	$(function () {
 
+	  var $genreChart = $("#genre-chart");
+	  $.ajax({
+		url: $genreChart.data("url"),
+		success: function (data) {
 
+		  var ctx = $genreChart[0].getContext("2d");
 
-	<h4>List is </h4>
-	<ul>
-	{% for i in list %}
-	<li>{{ i }}</li>
-	{% endfor %}
-</body>
-</html>
- -->
+		  new Chart(ctx, {
+			type: 'bar',
+			data: {
+			  labels: data.labels,
+			  datasets: [{
+				backgroundColor: 'skyblue',
+				data: data.data
+			  }]          
+			},
+			options: {
+			  responsive: true,
+			  legend: false,
+			  title: {
+				display: true,
+				text: 'Distribution of probability mass by genre'
+			  }
+			}
+		  });
 
- <!DOCTYPE html>
- <html lang="en">
- <head>
-	 <meta charset="UTF-8">
-	 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
-	 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.13.0/css/all.css" integrity="sha384-Bfad6CLCknfcloXFOyFnlgtENryhrpZCe29RTifKEixXQZ38WheV+i/6YWSzkz3V" crossorigin="anonymous">
- 
-	 <title>Music</title>
- </head>
- <body>
-	 <nav class="navbar navbar-expand-lg navbar-light">
-		<div>
-			<a class="navbar-brand" href="" >
-				<i class="fas fa-quote-right"></i>
-				Music
-			</a>
-		</div>
-		 <div> 
-			User Details for: {{ user.username }}
-		 </div>
-		 <div class="collapse navbar-collapse" id="navbarNav" style="padding-top:50px">
-			 <ul class="navbar-nav">
-				 <li class="nav-item">
-					 <a class="nav-link" href="">Like</a>
-				 </li>
-				 <li class="nav-item">
-					 <a class="nav-link" href="">Dislike</a>
-				 </li>
-				 <li class="nav-item">
-					 <a class="nav-link" href="">Skip Song</a>
-				 </li>
-			 </ul>
-		 </div>
-	 </nav>
+		}
+	  });
 
+	});
 
-	 <div class="content container">
-		Random text here
+	$(function () {
+
+		var $artistChart = $("#artist-chart");
+		$.ajax({
+		url: $artistChart.data("url"),
+		success: function (data) {
+
+			var ctx = $artistChart[0].getContext("2d");
+
+			new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: data.labels,
+				datasets: [{
+				backgroundColor: 'blue',
+				data: data.data
+				}]          
+			},
+			options: {
+				responsive: true,
+				legend: false,
+				title: {
+				display: true,
+				text: 'Sum of track weights by artist'
+				}
+			}
+			});
+
+		}
+		});
+
+		});
+
+</script>
+{%endblock scripts%}
+
+{%block content%}
+
+	<div style="padding:20px">	
+		<h5>
+			User: {{user.username}}
+		</h5>
+
+		<div style="padding-top:10px"><h5>Overall</h5></div>
+		<div>No. of tracks listened to: {{ analytics.count }}</div>
+		<div>No. of tracks liked: {{ analytics.likes }}</div>
+		<div>No. of tracks disliked: {{ analytics.dislikes }}</div>
+		<div>No. of tracks skipped: {{ analytics.skipped }}</div>
+
+		<div style="padding-top:20px"><h5>Favorites</h5></div>
+		<div>Favorite track: {{ favorites.track.track_artist }} | {{ favorites.track.track_album }} | {{ favorites.track.track_title }}</div>
+		<div>Favorite album: {{ favorites.album.album }} | {{ favorites.album.album_artist }}</div>
+		<div>Favorite artist: {{ favorites.artist.artist }}</div>
+		<div>Favorite genre: {{ favorites.genre.genre }}</div>
+	</div> 
+
+	<!-- <div id="container" style="width: 75%;">
+		<canvas id="artist-chart" data-url="{% url 'artist-chart' %}"></canvas>
+	</div> -->
+
+	<div id="container" style="width: 75%; padding:20px">
+		<canvas id="genre-chart" data-url="{% url 'genre-chart' %}"></canvas>
 	</div>
- 
- <!--    Bootstrap JS -->
-	 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-	 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-	 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
- </body>
- </html>
+{%endblock content%}
+

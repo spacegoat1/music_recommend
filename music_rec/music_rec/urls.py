@@ -35,4 +35,7 @@ urlpatterns = [
     # path('<int:track_id>/dislike/', views.dislike, name='dislike'),
     # path('<int:track_id>/skip/', views.skip, name='skip'),
     path('', views.track_action, name='track-action'),
+    path('analytics/', views.analytics, name='analytics'),
+    path('genre-chart/', views.genre_chart, name='genre-chart'),
+    path('artist-chart/', views.artist_chart, name='artist-chart'),
 ]
