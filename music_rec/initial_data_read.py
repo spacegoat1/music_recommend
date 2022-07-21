@@ -4,6 +4,8 @@ import ast
 from mr.models import *
 from django.db.models import F
 
+# NOTE: This script is now included as a migration
+
 def get_genre(x):
     try:
         return ast.literal_eval(x)[0]["genre_title"]
