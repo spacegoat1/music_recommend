@@ -9,48 +9,51 @@ from django.db.models import Max, Sum
 # Create your views here.
 
 def track_action(request):
-    print("In track_action")
-    print(request.POST.get('btn'))
     form = TrackForm(request.POST)
-
     action = request.POST.get('btn')
-
     user = User.objects.first()
     user_recommender = load_recommender(user)
+    track_id = user_recommender.last_played[-1]
 
-    return_new_song = False
+    return_new_track = False
     disable_like_dislike = False
+    update_weights = True
 
     if action is None:
         # This is initial page load -> just sample a track, no weight updates needed
-        return_new_song = True
+        return_new_track = True
     elif action == 'like':
         disable_like_dislike = True
     elif action == 'dislike':
         disable_like_dislike = True
     elif action == 'skip':
-        return_new_song = True
+        return_new_track = True
     elif action == 'listen_through':
-        return_new_song = True
+        return_new_track = True
     elif action == 'ignore':
-        return_new_song = True
+        return_new_track = True
 
-    if action in ["like", "dislike", "listen_through"]:
+    if action in ["like", "dislike", "listen_through", "skip"]:
         track_lh = ListenHistory.objects.filter(user=user).order_by('-listen_time').first()
         if action == "like":
-            track_lh.liked=True
+            track_lh.liked = True
         if action == "dislike":
-            track_lh.disliked=True
+            track_lh.disliked = True
         if action == "listen_through":
-            track_lh.completed=True
+            track_lh.completed = True
+            if track_lh.liked or track_lh.disliked:
+                update_weights = False
+        if action == "skip":
+            track_lh.skipped = True
+            if track_lh.liked or track_lh.disliked:
+                update_weights = False
         track_lh.save()
 
-    if return_new_song:
+    if return_new_track:
         sampled_track = Track.objects.get(pk=user_recommender.sample())
         # Add new track to listen history
         ListenHistory.objects.create(user=user, track=sampled_track)
     else:
-        track_id = user_recommender.last_played[-1]
         sampled_track = Track.objects.get(pk=track_id)
 
     track_details = {
@@ -63,8 +66,8 @@ def track_action(request):
     }
 
     user_recommender.save()
-    if action is not None:
-        async_processes(user_recommender, action)
+    if action is not None and update_weights:
+        async_processes(user_recommender, action, track_id)
 
     return render(request, 'track.html', {'form': form, 'track': track_details})
 

@@ -28,7 +28,15 @@
 			  title: {
 				display: true,
 				text: 'Distribution of probability mass by genre'
-			  }
+			  },
+			  scales: {
+				yAxes: [{
+					display: true,
+					ticks: {
+						beginAtZero: true   // minimum value will be 0.
+						}
+					}]
+				},
 			}
 		  });
 

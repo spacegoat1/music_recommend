@@ -26,14 +26,14 @@ def load_recommender(user):
 
 # Calculation of parameters for models
 RECOMMENDER_PARAMETERS = {
-    'max_ratio': 500,
+    'max_ratio': 50,
     'points_per_song_default': 10000,
     'deque_length': 5,
     'track_count': Track.objects.all().count(),
-    'alpha_track': 0.2, # how much to update the track weight by, like a learning rate
-    'alpha_album': 0.16, # how much to update the album weight by, like a learning rate
-    'alpha_artist': 0.12, # how much to update the artist weight by, like a learning rate
-    'alpha_genre': 0.08 , # how much to update the genre weight by, like a learning rate
+    'alpha_track': 0.3, # how much to update the track weight by, like a learning rate
+    'alpha_album': 0.2, # how much to update the album weight by, like a learning rate
+    'alpha_artist': 0.15, # how much to update the artist weight by, like a learning rate
+    'alpha_genre': 0.25 , # how much to update the genre weight by, like a learning rate
     'decay_factor': 0.99,
 }
 
@@ -92,21 +92,6 @@ class Recommender:
         # Now set the current distribution over tracks
         self.current_distribution = TrackWeight.objects.filter(user=self.user).values_list("track", "weight")
 
-    def get_new_weight(self, curr_total, num_tracks, alpha, direction):
-        if num_tracks == 0:
-            return 1, 0
-        if direction == 'up':
-            gap_above = (MAX_POSSIBLE_WEIGHT * num_tracks) - curr_total
-            shift = gap_above * alpha * self.discount
-            new_total = curr_total + shift
-            move_factor = new_total / curr_total
-        else:
-            gap_below = curr_total - (MIN_POSSIBLE_WEIGHT * num_tracks)
-            shift = gap_below * alpha * self.discount
-            new_total = curr_total - shift
-            move_factor = new_total / curr_total
-        return move_factor, shift
-
     def sample(self):
         # Pick the next song to play depending on distribution, exclude the cache of recent songs
         curr_track_weights = \
@@ -116,15 +101,37 @@ class Recommender:
                             1, 
                             p=curr_track_weights[1,:]/np.sum(curr_track_weights[1,:]))[0])
         self.last_played.append(chosen_track)
-        self.discount = max(1, self.discount*RECOMMENDER_PARAMETERS['decay_factor'])
+        self.discount = max(0.5, self.discount*RECOMMENDER_PARAMETERS['decay_factor'])
 
         return chosen_track
 
-    def update_weights(self, action):
+    def get_new_weight(self, curr_total, num_tracks, alpha, direction):
+        if num_tracks == 0:
+            return 1, 0
+        if direction == 'up':
+            gap_above = (MAX_POSSIBLE_WEIGHT * num_tracks) - curr_total
+            shift = gap_above * alpha * self.discount
+            new_total = curr_total + shift
+            move_factor = new_total / curr_total
+            # print("curr_total", curr_total)
+            # print("MAX_POSSIBLE_WEIGHT * num_tracks", MAX_POSSIBLE_WEIGHT * num_tracks)
+            # print("gap_above", gap_above)
+            # print("alpha", alpha)
+            # print("self.discount", self.discount)
+            # print("shift", shift)
+            # print("new_total", new_total)
+            # print("move_factor", move_factor)
+        else:
+            gap_below = curr_total - (MIN_POSSIBLE_WEIGHT * num_tracks)
+            shift = gap_below * alpha * self.discount
+            new_total = curr_total - shift
+            move_factor = new_total / curr_total
+            shift *= -1 # multiplying by -1 to signify downward shift
+        return move_factor, shift
+
+    def update_weights(self, action, track_id):
         # Update the weights for a user given a track and action
-        # action can be one of ["like", "dislike", "skip", "listened_through", "ignored"]
-        print("Updating weights")
-        print(MIN_POSSIBLE_WEIGHT, MAX_POSSIBLE_WEIGHT)
+        # action can be one of ["like", "dislike", "skip", "listen_through", "ignored"]
 
         up_or_down = ACTION_CONSEQUENCES[action]
         if up_or_down is None:
@@ -132,14 +139,11 @@ class Recommender:
             return None
 
         # When an action is taken, the following weights need to be updated:
-        # 1. track
-        # 2. album
-        # 3. artist
-        # 4. genre
-        track = Track.objects.get(id=self.last_played[-1])
-        if track is None:
+        # 1. track 2. album 3. artist 4. genre
+        if track_id is None:
             # This should never happen
             return None
+        track = Track.objects.get(id=track_id)
         track_weight = TrackWeight.objects.filter(track=track)
         track_weight_ids = track_weight.values_list("id")
         album_weights = TrackWeight.objects.filter(track__album=track.album).exclude(id__in=track_weight_ids)
@@ -174,15 +178,12 @@ class Recommender:
 
         # The weights of all other tracks need to be moved in the opposite direction
         total_shift = track_shift + album_shift + artist_shift + genre_shift
-        remaining_tracks = TrackWeight.objects.all()\
-                                            .exclude(id__in=track_weight_ids)\
+        remaining_tracks = TrackWeight.objects.exclude(id__in=track_weight_ids)\
                                             .exclude(id__in=album_weights_ids)\
                                             .exclude(id__in=artist_weights_ids)\
                                             .exclude(id__in=genre_weights.values_list("id"))
         remaining_tracks_total_weight = remaining_tracks.aggregate(Sum('weight'))['weight__sum']
         remaining_tracks_shift_factor = (remaining_tracks_total_weight - total_shift) / remaining_tracks_total_weight
-        print("total_shift", total_shift)
-        print("remaining_tracks_shift_factor", remaining_tracks_shift_factor)
 
         # Update all the weights in the DB
         track_weight.update(weight=F('weight') * track_shift_factor)
@@ -192,7 +193,6 @@ class Recommender:
         remaining_tracks.update(weight=F('weight') * remaining_tracks_shift_factor)
 
         # We assume that there are no rounding errors since weights are floats, not ints
-        print("Weights updated")
         return None
 
     def save(self):

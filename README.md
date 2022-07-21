@@ -1,57 +1,11 @@
 # music_recommend
-Project to create DB of songs and make recommendations
+Project to create DB of music tracks and play future tracks based on user's behavior. 
 
 Data taken from: https://github.com/mdeff/fma (fma_metadata.zip file -> raw_tracks.csv)
 
-Check for frontend:
-https://www.pluralsight.com/guides/introduction-to-django-templates
-https://mkdev.me/posts/fundamentals-of-front-end-django
-
-Questions:
-1. Should history be saved? Seems like it should. Create a watch history table
-2. How will the suggestions be actioned? i.e. if sampling from distribution, how is the distribution represented in DB?
-3. How to prevent the same songs being played repeatedly? Use a fixed length queue? Or just use watch history itself?
-4. Create a Recommender class -> it can have methods like reset, sample, update, etc.
-5. What does it mean to "Currently play a song?" What happens when the song 'ends'? It should trigger an update request, mark the song as liked, update the distribution and sample a new song, which then becomes "currently playing"
-6. What does it mean when a user "skips to next song"? It should trigger an update request, mark the song as disliked, update the distribution and sample a new song, which then becomes "currently playing"
-7. The "reset" can just instantiate a new recommender object without history
-8. Use deque with fixed length 5 to ensure that the last 5 songs don't get played again. How will this state persist between requests?
-
-NEED SOME WAY TO INTERPRET THE PROFILE CREATED:
- -> TOP GENRES HISTORICALLY, TOP ARTISTS ETC. 
- -> LEAST LIKED...
- -> CHANGES OVER TIME
-
-Django bootstrap v5
-
-Use Django user model to link listen history for user
-
-How to get the recommender variable to persist between request? -> Use Sessions -> NO -> Use pickle file
-
-Will have to host on GCP
-
-To login user: https://python.plainenglish.io/inbuild-user-authentication-with-django-38b5983a7543
-python manage.py runserver 0.0.0.0:8000
-Available at the non-http address
-
-To do:
-1. Login user
-2. Handle overlaps (same track belongs to track, album, artist, genre) - done
-3. Make updates decay depending on no. of tracks listened to - done
-4. SET TYPE DEFINTIONS FOR EACH FUNCTION, eg. track: Track - not doing
-5. Add documentation for code - not doing
-6. Add some high level analytics for user (most favorite...) and the current distribution of weights
-7. Add a migration in the middle to populate the data in DB - done
-8. Setup on cloud
-9. Save listen history to DB - done
-10. Keep separate queue to update track weights - done
-
-
 ## ASSUMPTIONS:
 1. The library of songs does not change in the midst of a user-session
-2. If the library changes between sessions, how can we adjust for it? Songs that don't have weights should just get uniform weights whereas those for which we do have information should get scaled up/down
-3. Each track belongs to exactly one album, each album belongs to exactly one artist, and each track belongs to exactly one genre. This is a limiting assumption, but useful for a quick implementation. 
-
+2. Each track belongs to exactly one album, each album belongs to exactly one artist, and each track belongs to exactly one genre. This is a limiting assumption, but useful for a quick implementation. 
 
 ## EXPLANATIONS:
 1. The broad idea of the recommender is that before we have any information, each track is equally likely to be played. (Note: This assumption can be improved, so that each artist is equally likely or each genre is equally likely, etc. since the no. of tracks per artist is not the same, neither is the no. of tracks per genre etc. However, for simplicity, I am assuming that all tracks are equally likely. )<br>
@@ -77,10 +31,12 @@ When adjusting weights, we must be careful to maintain the same aggregate no of 
 
 3. A deque is maintained of the last 5 songs to avoid playing any of those. The number 5 is a hyperparameter which can be tuned. 
 
-4. # NEED TO BE CAREFUL -> LIKING A SONG IS NOT EQUIVALENT TO MOVING TO THE NEXT TRACK
+4. Note that 'liking' a track and 'listening through' the track are treated equivalently. Similarly, 'disliking' and 'skipping' a track are also treated equivalently. Liking or disliking a track once disables liking/disliking it again in the same listen, but the track can be liked/disliked the next time it is listened to. 
 
 5. Note that the number of songs is not uniformly distributed across genres (distribution of song counts has been shared by email), and since we start with the assumption that each song is equally likely, this translates to the most frequent genre being overplayed in the beginning. 
 
-6. Weights are updated asynchronously. The code for async updates in DB was taken off StackOverflow: https://stackoverflow.com/questions/6614194/how-to-have-django-give-a-http-response-before-continuing-on-to-complete-a-task
+6. Weights are updated asynchronously. The code for async updates in DB was taken off StackOverflow: https://stackoverflow.com/questions/6614194/how-to-have-django-give-a-http-response-before-continuing-on-to-complete-a-task and called in async_queue.py
 
-7. I included a simple bar chart using this guide: https://www.section.io/engineering-education/integrating-chart-js-in-django/ Ideally, I would have liked to show a probability distribution across all tracks, but there are too many to show meaningfully, so I left it at probability by genre. 
+7. I included a simple bar chart using this guide: https://www.section.io/engineering-education/integrating-chart-js-in-django/ Ideally, I would have liked to show a probability distribution across all tracks, but there are too many to show meaningfully, so I left it at probability by genre. Note that the 'alpha_genre' parameter is higher than the artist and album ones only because I am showing the distribution of masses over genres on the frontend - so that likes/dislikes by the user shows us as an effect on genre. 
+
+8. I wanted to check that the recommender was actually doing what was expected, so I wrote a small test function in test_recommender.py, and it appears to be function well. 

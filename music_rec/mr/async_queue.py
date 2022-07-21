@@ -33,6 +33,5 @@ atexit.register(_cleanup)
 
 
 @postpone
-def async_processes(user_recommender, action):
-    print("In async_processes")
-    user_recommender.update_weights(action)
+def async_processes(user_recommender, action, track_id):
+    user_recommender.update_weights(action, track_id)
