@@ -1,0 +1,112 @@
+{% extends 'base.html'%}
+
+
+{%block scripts%}
+	<script>
+  
+	$(function () {
+
+	  var $genreChart = $("#genre-chart");
+	  $.ajax({
+		url: $genreChart.data("url"),
+		success: function (data) {
+
+		  var ctx = $genreChart[0].getContext("2d");
+
+		  new Chart(ctx, {
+			type: 'bar',
+			data: {
+			  labels: data.labels,
+			  datasets: [{
+				backgroundColor: 'skyblue',
+				data: data.data
+			  }]          
+			},
+			options: {
+			  responsive: true,
+			  legend: false,
+			  title: {
+				display: true,
+				text: 'Distribution of probability mass by genre'
+			  },
+			  scales: {
+				yAxes: [{
+					display: true,
+					ticks: {
+						beginAtZero: true   // minimum value will be 0.
+						}
+					}]
+				},
+			}
+		  });
+
+		}
+	  });
+
+	});
+
+	$(function () {
+
+		var $artistChart = $("#artist-chart");
+		$.ajax({
+		url: $artistChart.data("url"),
+		success: function (data) {
+
+			var ctx = $artistChart[0].getContext("2d");
+
+			new Chart(ctx, {
+			type: 'bar',
+			data: {
+				labels: data.labels,
+				datasets: [{
+				backgroundColor: 'blue',
+				data: data.data
+				}]          
+			},
+			options: {
+				responsive: true,
+				legend: false,
+				title: {
+				display: true,
+				text: 'Sum of track weights by artist'
+				}
+			}
+			});
+
+		}
+		});
+
+		});
+
+</script>
+{%endblock scripts%}
+
+{%block content%}
+
+	<div style="padding:20px">	
+		<h5>
+			User: {{user.username}}
+		</h5>
+
+		<div style="padding-top:10px"><h5>Overall</h5></div>
+		<div>No. of tracks listened to: {{ analytics.count }}</div>
+		<div>No. of tracks liked: {{ analytics.likes }}</div>
+		<div>No. of tracks disliked: {{ analytics.dislikes }}</div>
+		<div>No. of tracks skipped: {{ analytics.skipped }}</div>
+
+		<div style="padding-top:20px"><h5>Favorites</h5></div>
+		<div>Favorite track: {{ favorites.track.track_artist }} | {{ favorites.track.track_album }} | {{ favorites.track.track_title }}</div>
+		<div>Favorite album: {{ favorites.album.album }} | {{ favorites.album.album_artist }}</div>
+		<div>Favorite artist: {{ favorites.artist.artist }}</div>
+		<div>Favorite genre: {{ favorites.genre.genre }}</div>
+	</div> 
+
+	<!-- <div id="container" style="width: 75%;">
+		<canvas id="artist-chart" data-url="{% url 'artist-chart' %}"></canvas>
+	</div> -->
+
+	<div id="container" style="width: 75%; padding:20px">
+		<canvas id="genre-chart" data-url="{% url 'genre-chart' %}"></canvas>
+	</div>
+{%endblock content%}
+

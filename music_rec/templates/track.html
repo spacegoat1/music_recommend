@@ -1,0 +1,19 @@
+{% extends 'base.html'%}
+
+{%block content%}
+	<div style="padding:20px">
+		{{ track.track_artist }} | {{ track.track_album }} | {{ track.track_title }} 
+		<br>
+		Genre: {{ track.track_genre }}
+		<br>
+		<br>
+		<form method="post">
+			{% csrf_token %}
+			<input type="submit" name="btn" value="like" track="{{track.track_id}}" {% if track.disable %}disabled{%endif%}>
+			<input type="submit" name="btn" value="dislike" track="{{track.track_id}}" {% if track.disable %}disabled{%endif%}>
+			<input type="submit" name="btn" value="skip" track="{{track.track_id}}">
+			<input type="submit" name="btn" value="listen_through" track="{{track.track_id}}">
+			<!-- <input type="submit" name="btn" value="ignore" track="{{track.track_id}}"> -->
+		</form>
+	</div>
+{%endblock content%}
