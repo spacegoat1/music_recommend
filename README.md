@@ -18,7 +18,7 @@ Then, when the next track is meant to be played, we sample from the distribution
 2. In terms of how much to scale weights, some important considerations are that we never want the weight of any given track to go to zero, since that track will never be played then. As a simplifying assumption, we can say that: 
 > the highest weighted track (which we think the user likes the most) should never be more than X times more likely to be played than the lowest rated track. 
 
-What this translates to is that the maximum possible values of (max(track_weight) / min(track_weight)) should never exceed X. We define this X to be a hyperparameter called max_ratio. We assume that this variable never changes across users, across sessions for simplicity. <br>
+What this translates to is that the maximum possible values of (max(track_weight) / min(track_weight)) should never exceed X. We define this X to be a hyperparameter called max_ratio (currently set to 50). We assume that this variable never changes across users, across sessions for simplicity. <br>
 Some quick algebra allows us to derive upper and lower limits for track weights based on this assumption. These are calculated upon the recommender initialization and maintained in the min_possible_weight and max_possible_weight variables for the recommender. <br>
 Additionally, (max_possible_weight - min_possible_weight) gives a range that the weights can be adjusted in. Now, if a song starts with the default no. of points, and is liked, we can adjust its track weight upward by some factor:
 > lambda_track * ((max_possible_weight - track_current_weight) / (max_possible_weight - min_possible_weight))
@@ -40,3 +40,5 @@ When adjusting weights, we must be careful to maintain the same aggregate no of 
 7. I included a simple bar chart using this guide: https://www.section.io/engineering-education/integrating-chart-js-in-django/ Ideally, I would have liked to show a probability distribution across all tracks, but there are too many to show meaningfully, so I left it at probability by genre. Note that the 'alpha_genre' parameter is higher than the artist and album ones only because I am showing the distribution of masses over genres on the frontend - so that likes/dislikes by the user shows us as an effect on genre. 
 
 8. I wanted to check that the recommender was actually doing what was expected, so I wrote a small test function in test_recommender.py, and it appears to be function well. 
+
+9. While in theory we can have multiple users since a user model has already been implemented, for the current demo, only a single user is assumed. 

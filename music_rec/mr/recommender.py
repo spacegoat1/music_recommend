@@ -77,13 +77,6 @@ class Recommender:
         self.user = user if user else User.objects.get(id=1) # assuming a single user!
         # user = user if user else User.objects.get(id=1) # assuming a single user!
 
-        # TO BE DONE:
-        # If the total points != (self.track_count * points_per_song_default), 
-        #   this means that new songs have been added to the library or deleted from the library.
-        #   We need to adjust TrackWeight accordingly to account for this. 
-        #   This could be as simple as merely adding the points_per_song_default for each new track.
-        #   In case of track deletions, merely scale TrackWeight down till the sums add up to the total?
-
         if reset:
             # No historical weights implies that we have no evidence of user preferences -> assume flat prior
             weight = self.track_count
@@ -113,14 +106,6 @@ class Recommender:
             shift = gap_above * alpha * self.discount
             new_total = curr_total + shift
             move_factor = new_total / curr_total
-            # print("curr_total", curr_total)
-            # print("MAX_POSSIBLE_WEIGHT * num_tracks", MAX_POSSIBLE_WEIGHT * num_tracks)
-            # print("gap_above", gap_above)
-            # print("alpha", alpha)
-            # print("self.discount", self.discount)
-            # print("shift", shift)
-            # print("new_total", new_total)
-            # print("move_factor", move_factor)
         else:
             gap_below = curr_total - (MIN_POSSIBLE_WEIGHT * num_tracks)
             shift = gap_below * alpha * self.discount
