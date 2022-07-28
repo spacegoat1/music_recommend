@@ -1,5 +1,5 @@
 # music_recommend
-Project to create DB of music tracks and play future tracks based on user's behavior. 
+Project to create DB of music tracks and play future tracks based on user's behavior. Built on Postgres DB, Django backend, Django templates frontend, charts.js, deployed on GCP. Please contact me to see a demo :)
 
 Data taken from: https://github.com/mdeff/fma (fma_metadata.zip file -> raw_tracks.csv)
 
